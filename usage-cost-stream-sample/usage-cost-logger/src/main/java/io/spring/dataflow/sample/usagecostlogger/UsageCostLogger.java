@@ -13,6 +13,10 @@ public class UsageCostLogger {
 
 	private static final Logger logger = LoggerFactory.getLogger(UsageCostLoggerApplication.class);
 
+	/**
+	 * - for why a Consumer is used for Sink, see https://dataflow.spring.io/docs/feature-guides/streams/function-composition/#function-composition
+	 *
+	 */ 
 	@Bean
 	public Consumer<UsageCostDetail> process() {
 		return usageCostDetail -> {

@@ -17,6 +17,7 @@
         <module>usage-cost-logger</module>
         <module>usage-cost-processor</module>
         <module>usage-detail-sender</module>
+        <module>geocoding-processor</module>
     </modules>
     <properties>
         <docker.org>springcloudstream</docker.org>

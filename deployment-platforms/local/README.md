@@ -156,6 +156,20 @@ export scdf_stream_stdout_path=/tmp/1627881451004/time-log.log-v1/stdout_0.log
 docker exec -it skipper tail -f $scdf_stream_stdout_path
 ```
 
+## Add Geolocation Processing as well
+1. [Get google maps API key](https://developers.google.com/maps/documentation/geocoding/get-api-key)
+- setup a GCP app
+- Add Geocoding API
+- Under "Credentials" Add an API Key by clicking "CREATE CREDENTIALS" Button and then "API Key"
+- Optionally, set restrictions/limitations on the API key for security
+
+2. Set API key under application.properties
+    ```
+    cp geocoding-processor/src/main/resources/application.properties.example geocoding-processor/src/main/resources/application.properties
+    vim geocoding-processor/src/main/resources/application.properties
+    # then add the api key under google.maps.api-key
+    ```
+    
 
 # Monitoring
 
@@ -165,16 +179,17 @@ Try this: https://dataflow.spring.io/docs/installation/local/docker-customize/#i
 
 # Interacting with Kafka
 
-## Create one-off consumer
-```
-docker exec dataflow-kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic usage-detail
-```
-
 ## List topics
 You can reference the zookeeper using the hostname and port assigned by docker-compose network (ie "zookeeper:2181")
 
 ```
 docker exec dataflow-kafka kafka-topics --zookeeper zookeeper:2181 --list
+```
+
+## Create one-off consumer
+```
+export scdf_topic_name_1=usage-cost-logger-stream.usage-detail-sender
+docker exec dataflow-kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic $scdf_topic_name_1
 ```
 
 

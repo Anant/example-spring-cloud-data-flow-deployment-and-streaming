@@ -1,4 +1,4 @@
-package io.spring.dataflow.sample.usagedetailsender;
+package us.anant.dataflow.sample.geocodingprocessor;
 
 public class UsageDetail {
 
@@ -43,4 +43,5 @@ public class UsageDetail {
 	public void setAddress(String address) {
 		this.address = address;
 	}
+
 }

@@ -12,6 +12,10 @@ public class UsageCostProcessor {
 
 	private double ratePerMB = 0.05;
 
+	/**
+	 * - for why a Function is used for processor, see https://dataflow.spring.io/docs/feature-guides/streams/function-composition/#function-composition
+	 *
+	 */ 
 	@Bean
 	public Function<UsageDetail, UsageCostDetail> processUsageCost() {
 		return usageDetail -> {
