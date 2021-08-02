@@ -169,7 +169,58 @@ docker exec -it skipper tail -f $scdf_stream_stdout_path
     vim geocoding-processor/src/main/resources/application.properties
     # then add the api key under google.maps.api-key
     ```
+
+3. Build and deploy jar
+- If already built, need to build again to get the application.properties file into the target
+
+    ```
+    export skipper_server_name=skipper && \
+    cd ../../usage-cost-stream-sample && \
+    ./mvnw clean package && \
+    docker cp ./geocoding-processor/target/geocoding-processor-0.0.1-SNAPSHOT.jar $skipper_server_name:/home
+    ```
+
+4. Register the geocoding processor app 
+- Navigate to "Add Applications" View: http://localhost:9393/dashboard/#/apps/add
+- Click on dropdown to "Import application coordinates from a properties file"
+- Paste this in:
+    ```
+    processor.geocoding-processor=file:///home/geocoding-processor-0.0.1-SNAPSHOT.jar
+    ```
+
+5. Compose a new stream with this processor. For now, just log as a sink.
+- You can use this stream definition
+```
+usage-detail-sender | geocoding-processor | log
+```
+- Name it `log-geocoding-processor`
+
+6. Confirm that it's writing to a Kafka topic
+- Check that kafka topic is made
+    ```
+    docker exec dataflow-kafka kafka-topics --zookeeper zookeeper:2181 --list
+    ```
+- Consume from that topic
+    ```
+    export scdf_topic_name=log-geocoding-processor.geocoding-processor
+    docker exec dataflow-kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic $scdf_topic_name
+    ```
     
+    Example results: 
+    ```
+    {"userId":"user3","longitude":"1.7282636","latitude":"52.6139407"}
+    {"userId":"user2","longitude":"-0.0923534","latitude":"50.9932155"}
+    {"userId":"user5","longitude":"-0.452421","latitude":"51.3720857"}
+    {"userId":"user1","longitude":"-0.2613355","latitude":"51.5778763"}
+    {"userId":"user1","longitude":"-1.5688602","latitude":"55.0042614"}
+    {"userId":"user2","longitude":"1.7282636","latitude":"52.6139407"}
+    {"userId":"user4","longitude":"-1.5619722","latitude":"54.61625960000001"}
+    {"userId":"user5","longitude":"-0.0320057","latitude":"51.8169166"}
+    {"userId":"user4","longitude":"-0.2054393","latitude":"51.4833025"}
+    {"userId":"user5","longitude":"1.2873511","latitude":"52.6387799"}
+    {"userId":"user5","longitude":"-3.818027499999999","latitude":"52.061626"}
+    ```
+
 
 # Monitoring
 
