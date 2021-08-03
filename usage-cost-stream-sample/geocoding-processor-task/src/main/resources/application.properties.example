@@ -1,0 +1,11 @@
+spring.cloud.stream.function.bindings.processGeocoding-in-0=input
+spring.cloud.stream.function.bindings.processGeocoding-out-0=output
+spring.cloud.stream.bindings.input.destination=usage-detail
+spring.cloud.stream.bindings.output.destination=usage-coordinates
+
+logging.level.org.springframework.cloud.task=DEBUG
+
+# required (?) for tasks
+spring.application.name=geocodingProcessor
+
+google.maps.api-key=<api-key>
