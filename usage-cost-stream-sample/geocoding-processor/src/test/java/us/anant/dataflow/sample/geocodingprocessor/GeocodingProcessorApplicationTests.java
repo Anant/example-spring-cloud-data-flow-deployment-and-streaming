@@ -35,6 +35,7 @@ public class GeocodingProcessorApplicationTests {
 
 			UsageDetail usageDetail = new UsageDetail();
 			usageDetail.setUserId("user1");
+
 			// google's address
 			usageDetail.setAddress("1600 Amphitheatre Pkwy, Mountain View, CA 94043, USA");
 

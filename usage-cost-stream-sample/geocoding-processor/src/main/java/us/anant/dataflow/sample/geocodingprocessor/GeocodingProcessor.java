@@ -32,8 +32,6 @@ public class GeocodingProcessor {
 			UsageCoordinates usageCoordinates = new UsageCoordinates();
 			usageCoordinates.setUserId(usageDetail.getUserId());
 
-			// TODO set address using usage detail address
-
 			try {
 				String address = URLEncoder.encode(usageDetail.getAddress(), StandardCharsets.UTF_8.toString()); 
 

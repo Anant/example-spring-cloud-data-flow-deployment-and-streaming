@@ -54,7 +54,7 @@ services:
       - ZOOKEEPER_CLIENT_PORT=2181
 
   dataflow-server:
-    image: springcloud/spring-cloud-dataflow-server:${DATAFLOW_VERSION:-2.9.0-SNAPSHOT}
+    image: springcloud/spring-cloud-dataflow-server:${DATAFLOW_VERSION:-2.8.1}
     container_name: dataflow-server
     ports:
       - "9393:9393"
@@ -107,7 +107,7 @@ services:
         echo 'Maven Task apps imported'"
 
   skipper-server:
-    image: springcloud/spring-cloud-skipper-server:${SKIPPER_VERSION:-2.8.0-SNAPSHOT}
+    image: springcloud/spring-cloud-skipper-server:${SKIPPER_VERSION:-2.7.1}
     container_name: skipper
     ports:
       - "7577:7577"
@@ -123,3 +123,29 @@ services:
     restart: always
     volumes:
       - ${HOST_MOUNT_PATH:-.}:${DOCKER_MOUNT_PATH:-/home/cnb/scdf}
+
+  dse:
+    image: datastax/dse-server:6.8.13
+    # command: [-g] # Run with graph capabilities enabled
+    environment:
+      DS_LICENSE: accept # Accept licence on start
+      JVM_EXTRA_OPTS: -Xms2g -Xmx2g
+    cap_add:
+      - IPC_LOCK # Allow DSE to lock memory with mlock
+    ulimits:
+      memlock: -1 # Lock memory
+    # volumes:
+    #   - ./data/cassandra:/var/lib/cassandra
+    #   - ./data/spark:/var/lib/spark
+    #   - ./data/dsefs:/var/lib/dsefs
+    #   - ./data/cassandra:/var/log/cassandra
+    #   - ./data/spark:/var/log/spark
+    ports:
+      - "4040:4040"
+      - "7080:7080"
+      - "7081:7081"
+      - "8983:8983"
+      - "9042:9042"
+      - "9077:9077"
+      - "10000:10000"
+    container_name: dataflow-dse-server

@@ -62,11 +62,10 @@ docker exec -it dataflow-server java -jar shell.jar
 - Get link from [here](https://dataflow.spring.io/docs/installation/local/manual/#downloading-server-jars) or [here](https://dataflow.spring.io/docs/installation/local/docker/#using-the-shell)
 
 
-NOTE as of 8/2/21, this link returning a 404
+NOTE as of 8/2/21, this link returning a 404 if using link provided in docs, but this link works (use "release" instead of "snapshot" in the path)
 ```
 # download CLI
-wget -O spring-cloud-dataflow-shell-2.8.1.jar https://repo.spring.io/snapshot/org/springframework/cloud/spring-cloud-dataflow-shell/2.8.1/spring-cloud-dataflow-shell-2.8.1.jar
-
+wget https://repo.spring.io/release/org/springframework/cloud/spring-cloud-dataflow-shell/2.8.1/spring-cloud-dataflow-shell-2.8.1.jar
 
 # run 
 java -jar spring-cloud-dataflow-shell-2.8.1.jar
@@ -221,6 +220,14 @@ usage-detail-sender | geocoding-processor | log
     {"userId":"user5","longitude":"-3.818027499999999","latitude":"52.061626"}
     ```
 
+## Trigger Task from a stream
+Following this guide: https://docs.spring.io/spring-cloud-dataflow-samples/docs/current/reference/htmlsingle/#_stream_launching_batch_job
+
+
+
+## Sink directly from Kafka topic into Cassandra 
+TODO
+- basically, instead of log sink, use cassandra sink
 
 # Monitoring
 
