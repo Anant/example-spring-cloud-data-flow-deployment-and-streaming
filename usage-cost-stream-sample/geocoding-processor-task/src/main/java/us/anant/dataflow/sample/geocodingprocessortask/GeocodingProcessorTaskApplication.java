@@ -25,7 +25,7 @@ public class GeocodingProcessorTaskApplication {
   public static class GeocodingProcessorTaskCommandLineRunner implements CommandLineRunner {
 		@Override
 		public void run(String... strings) throws Exception {
-				System.out.println("Hello, World!");
+			System.out.println("Hello, World!");
 		}
   }
 }

@@ -69,7 +69,10 @@ wget https://repo.spring.io/release/org/springframework/cloud/spring-cloud-dataf
 
 # run 
 java -jar spring-cloud-dataflow-shell-2.8.1.jar
+
 ```
+
+If your SCDF docker container is up and running already, this should connect automatically.
 
 #### In GUI
 1. Navigate to "Add Applications" View: http://localhost:9393/dashboard/#/apps/add
@@ -81,6 +84,12 @@ source.usage-detail-sender=file:///home/usage-detail-sender-0.0.1-SNAPSHOT.jar
 processor.usage-cost-processor=file:///home/usage-cost-processor-0.0.1-SNAPSHOT.jar
 sink.usage-cost-logger=file:///home/usage-cost-logger-0.0.1-SNAPSHOT.jar
 ```
+
+
+You can also register in the CLI:
+    ```
+    app register --name usage-detail-sender --type source --uri file:///home/usage-detail-sender-0.0.1-SNAPSHOT.jar
+    ```
 
 You can confirm they were registered by viewing in the Apps index: http://localhost:9393/dashboard/#/apps
 
@@ -187,6 +196,8 @@ docker exec -it skipper tail -f $scdf_stream_stdout_path
     processor.geocoding-processor=file:///home/geocoding-processor-0.0.1-SNAPSHOT.jar
     ```
 
+
+
 5. Compose a new stream with this processor. For now, just log as a sink.
 - You can use this stream definition
 ```
@@ -223,11 +234,35 @@ usage-detail-sender | geocoding-processor | log
 ## Trigger Task from a stream
 Following this guide: https://docs.spring.io/spring-cloud-dataflow-samples/docs/current/reference/htmlsingle/#_stream_launching_batch_job
 
+1. Copy jar into Skipper server container
 
+    ```
+    cd ../../usage-cost-stream-sample && \
+    export skipper_server_name=skipper && \
+    docker cp ./geocoding-processor-task/target/geocoding-processor-task-0.0.1-SNAPSHOT.jar $skipper_server_name:/home
+    ```
+2. Create Task
+
+ - Register the task app
+    ```
+    # for example, in the CLI shell:
+    app register --name geocoding-processor-task --type processor --uri file:///home/geocoding-processor-task-0.0.1-SNAPSHOT.jar
+    ```
+ - Create the stream that launches the task
+    ```
+    # for example, in the CLI shell:
+    # (assuming usage-detail-sender is already registered)
+    stream create geocoding-task-from-stream --definition "usage-detail-sender | geocoding-processor-task | log" --deploy
+
+    # should get response: 
+    # > Created new stream 'geocoding-task-from-stream'
+    # > Deployment request has been sent
+    ```
 
 ## Sink directly from Kafka topic into Cassandra 
 TODO
 - basically, instead of log sink, use cassandra sink
+    One example: https://docs.spring.io/spring-cloud-dataflow-samples/docs/current/reference/htmlsingle/#http-cassandra-local
 
 # Monitoring
 
