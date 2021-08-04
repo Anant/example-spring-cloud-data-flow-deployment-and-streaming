@@ -20,5 +20,9 @@ $./mvnw package -Pdist
 
 This must be run from this directory and will build `dist/usage-cost-stream-sample.zip` 
 
-# Guide/Instructions for this template:
+## Guide/Instructions for this template:
 https://dataflow.spring.io/docs/stream-developer-guides/streams/standalone-stream-sample/
+
+### Source Code for the tutorial: 
+https://github.com/spring-cloud/spring-cloud-dataflow-samples/blob/master/dataflow-website/stream-developer-guides/streams/standalone-stream-sample
+
