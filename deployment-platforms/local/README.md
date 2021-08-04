@@ -193,57 +193,7 @@ usage-detail-sender | geocoding-processor | log
     {"userId":"user5","longitude":"-3.818027499999999","latitude":"52.061626"}
     ```
 
-
-## Trigger Task from a stream (WIP)
-Following this guide: https://docs.spring.io/spring-cloud-dataflow-samples/docs/current/reference/htmlsingle/#_stream_launching_batch_job
-
-1. Copy jar into Skipper server container
-
-    ```
-    cd ../../usage-cost-stream-sample && \
-    export skipper_server_name=skipper && \
-    docker cp ./geocoding-processor-task/target/geocoding-processor-task-0.0.1-SNAPSHOT.jar $skipper_server_name:/home
-    ```
-2. Create Task
-
- - Register the task app
-    ```
-    # for example, in the CLI shell:
-    app register --name geocoding-task --type task --uri file:///home/geocoding-processor-task-0.0.1-SNAPSHOT.jar
-    ```
-
- - Create the Task definition
-    ```
-    # for example, in the CLI shell:
-    task create geocoding-task --definition "geocoding-task"
-
-    # sample STDOUT response:
-    # > Created new task 'geocoding-task'
-    ```
-
- - Test launch task
-    ```
-    # for example, in the CLI shell:
-    task launch geocoding-task
-    # sample STDOUT response:
-    # > Launched task 'geocoding-task' with execution id 1
-    ```
- - Create the stream that launches the task
-    ```
-    # for example, in the CLI shell:
-    # (assuming usage-detail-sender is already registered)
-    stream create geocoding-task-from-stream --definition "usage-detail-sender | geocoding-processor-task | log" --deploy
-
-    # should get response: 
-    # > Created new stream 'geocoding-task-from-stream'
-    # > Deployment request has been sent
-    ```
-
-    TODO figure out why tasks aren't getting ran, try with their complete examples...but need to find one with kafka and mysql or adjust to make sure it uses those
-
-
 ## Sink directly from Kafka topic into Cassandra 
-TODO
 - basically, instead of log sink, use cassandra sink
     One example: https://docs.spring.io/spring-cloud-dataflow-samples/docs/current/reference/htmlsingle/#http-cassandra-local
     Reference docs: 
