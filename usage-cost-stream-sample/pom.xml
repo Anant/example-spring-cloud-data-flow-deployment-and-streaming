@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.spring.dataflow.sample</groupId>
     <artifactId>usage-cost-stream-sample</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -18,7 +18,8 @@
         <module>usage-cost-processor</module>
         <module>usage-detail-sender</module>
         <module>geocoding-processor</module>
-        <module>geocoding-processor-task</module>
+        <!-- module>geocoding-processor-task</module -->
+        <module>cassandra-sink</module>
     </modules>
     <properties>
         <docker.org>springcloudstream</docker.org>

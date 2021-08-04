@@ -35,6 +35,7 @@ public class UsageCoordinates {
 	}
 
 	public String toString() {
-		return "{\"userId\": \""+this.getUserId() + "\", \"longitude\": \""+ this.getLongitude()+"\", \"latitude\": \"" + this.getLatitude()+ "\" }";
+		// make sure lowercase for CQL
+		return "{\"userid\": \""+this.getUserId() + "\", \"longitude\": \""+ this.getLongitude()+"\", \"latitude\": \"" + this.getLatitude()+ "\" }";
 	}
 }

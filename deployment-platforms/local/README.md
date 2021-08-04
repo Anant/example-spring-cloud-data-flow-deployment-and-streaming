@@ -55,7 +55,7 @@ For some reason, java wasn't installed on the image I pulled. But according to t
 docker exec -it dataflow-server java -jar shell.jar
 
 # register the apps
-
+...
 ```
 
 #### Download CLI and run manually
@@ -63,14 +63,17 @@ docker exec -it dataflow-server java -jar shell.jar
 
 
 NOTE as of 8/2/21, this link returning a 404 if using link provided in docs, but this link works (use "release" instead of "snapshot" in the path)
-```
-# download CLI
-wget https://repo.spring.io/release/org/springframework/cloud/spring-cloud-dataflow-shell/2.8.1/spring-cloud-dataflow-shell-2.8.1.jar
+    ```
+    # download CLI
+    wget https://repo.spring.io/release/org/springframework/cloud/spring-cloud-dataflow-shell/2.8.1/spring-cloud-dataflow-shell-2.8.1.jar
 
-# run 
-java -jar spring-cloud-dataflow-shell-2.8.1.jar
+    # run 
+    java -jar spring-cloud-dataflow-shell-2.8.1.jar
 
-```
+    app register --name usage-detail-sender --type source --uri file:///home/usage-detail-sender-0.0.1-SNAPSHOT.jar
+    app register --name usage-cost-processor --type processor --uri file:///home/usage-cost-processor-0.0.1-SNAPSHOT.jar
+    app register --name usage-cost-logger --type sink --uri file:///home/usage-cost-logger-0.0.1-SNAPSHOT.jar
+    ```
 
 If your SCDF docker container is up and running already, this should connect automatically.
 
@@ -86,54 +89,8 @@ sink.usage-cost-logger=file:///home/usage-cost-logger-0.0.1-SNAPSHOT.jar
 ```
 
 
-You can also register in the CLI:
-    ```
-    app register --name usage-detail-sender --type source --uri file:///home/usage-detail-sender-0.0.1-SNAPSHOT.jar
-    ```
-
 You can confirm they were registered by viewing in the Apps index: http://localhost:9393/dashboard/#/apps
 
-
-## Run Jars using Straight Java
-NOTE not fully tested
-
-Rather than running within SCDF, you can just run the jar by itself. 
-- [Guide](https://dataflow.spring.io/docs/stream-developer-guides/streams/deployment/local/)
-- NOTE make sure to expose the kafka broker port 9092 if you want to run the jars like this. To do this, open up the docker-compose.yml file and expose `9092:9092` for the kafka broker container
-- Can also build all jars at once:
-    ```
-    ../../usage-cost-stream-sample/mvnw clean package
-    ```
-
-
-### Run the Source Application
-```
-# build it (if haven't already)
-cd ../../usage-cost-stream-sample/usage-detail-sender/ && ./mvnw clean package
-
-# run it
-java -jar target/usage-detail-sender-0.0.1-SNAPSHOT.jar &
-```
-
-
-
-### Run the Processor Application
-```
-# build it (if haven't already)
-cd ../../usage-cost-stream-sample/usage-cost-processor && ./mvnw clean package
-
-# run it
-java -jar target/usage-cost-processor-0.0.1-SNAPSHOT.jar &
-```
-
-### Run the Sink Application
-```
-# build it (if haven't already)
-cd ../../usage-cost-stream-sample/usage-cost-logger && ./mvnw clean package
-
-# run it
-java -jar target/usage-cost-logger-0.0.1-SNAPSHOT.jar &
-```
 
 ## Compose a Stream
 1. Go to stream composition view: http://localhost:9393/dashboard/#/streams/list/create
@@ -196,7 +153,12 @@ docker exec -it skipper tail -f $scdf_stream_stdout_path
     processor.geocoding-processor=file:///home/geocoding-processor-0.0.1-SNAPSHOT.jar
     ```
 
-
+Or in the CLI:
+		```
+    app register --name geocoding-processor --type processor --uri file:///home/geocoding-processor-0.0.1-SNAPSHOT.jar
+		# expected response:
+		# > Successfully registered application 'processor:geocoding-processor'
+		```
 
 5. Compose a new stream with this processor. For now, just log as a sink.
 - You can use this stream definition
@@ -231,7 +193,8 @@ usage-detail-sender | geocoding-processor | log
     {"userId":"user5","longitude":"-3.818027499999999","latitude":"52.061626"}
     ```
 
-## Trigger Task from a stream
+
+## Trigger Task from a stream (WIP)
 Following this guide: https://docs.spring.io/spring-cloud-dataflow-samples/docs/current/reference/htmlsingle/#_stream_launching_batch_job
 
 1. Copy jar into Skipper server container
@@ -246,7 +209,24 @@ Following this guide: https://docs.spring.io/spring-cloud-dataflow-samples/docs/
  - Register the task app
     ```
     # for example, in the CLI shell:
-    app register --name geocoding-processor-task --type processor --uri file:///home/geocoding-processor-task-0.0.1-SNAPSHOT.jar
+    app register --name geocoding-task --type task --uri file:///home/geocoding-processor-task-0.0.1-SNAPSHOT.jar
+    ```
+
+ - Create the Task definition
+    ```
+    # for example, in the CLI shell:
+    task create geocoding-task --definition "geocoding-task"
+
+    # sample STDOUT response:
+    # > Created new task 'geocoding-task'
+    ```
+
+ - Test launch task
+    ```
+    # for example, in the CLI shell:
+    task launch geocoding-task
+    # sample STDOUT response:
+    # > Launched task 'geocoding-task' with execution id 1
     ```
  - Create the stream that launches the task
     ```
@@ -259,10 +239,67 @@ Following this guide: https://docs.spring.io/spring-cloud-dataflow-samples/docs/
     # > Deployment request has been sent
     ```
 
+    TODO figure out why tasks aren't getting ran, try with their complete examples...but need to find one with kafka and mysql or adjust to make sure it uses those
+
+
 ## Sink directly from Kafka topic into Cassandra 
 TODO
 - basically, instead of log sink, use cassandra sink
     One example: https://docs.spring.io/spring-cloud-dataflow-samples/docs/current/reference/htmlsingle/#http-cassandra-local
+    Reference docs: 
+    * https://dataflow.spring.io/docs/applications/pre-packaged/
+    * https://docs.spring.io/stream-applications/docs/2020.0.2/reference/html/#spring-cloud-stream-modules-cassandra-sink
+
+1. Setup Schema in CQL
+
+```
+CREATE KEYSPACE clouddata WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;
+CREATE TABLE clouddata.usage_detail  (
+    userId      TEXT PRIMARY KEY,
+    latitude    TEXT,
+    longitude    TEXT
+);
+```
+
+
+2. Create the stream
+
+The default Cassandra sink app expects json (see [reference](https://docs.spring.io/stream-applications/docs/2020.0.2/reference/html/#spring-cloud-stream-modules-cassandra-sink)) so we need to send that in our processor.
+
+    ```
+    # for example, in the CLI shell:
+    stream create geocoding-stream-to-cassandra --definition "usage-detail-sender | geocoding-processor | cassandra --spring.data.cassandra.contact-points=dataflow-dse-server:9042 --spring.data.cassandra.local-datacenter=dc1 --keyspace=clouddata --ingestQuery='insert into usage_detail (userId, latitude, longitude) values (?, ?, ?)'" --deploy
+
+    # should get response: 
+    # > Created new stream 'geocoding-task-from-stream'
+    # > Deployment request has been sent
+    ```
+
+TODO get it working...right now, not writing and silently. There is no clear indication why sink doesn't work. 
+
+----------------------------
+Alternative: custom C* sink
+
+- copy over the jar
+    ```
+    cd ../../usage-cost-stream-sample && \
+    export skipper_server_name=skipper && \
+    docker cp cassandra-sink/target/cassandra-sink-0.0.1-SNAPSHOT.jar $skipper_server_name:/home
+    ```
+- Register as app and deploy
+    ```
+    # run CLI
+    java -jar spring-cloud-dataflow-shell-2.8.1.jar
+
+    # register
+    app register --name cassandra-sink --type sink --uri file:///home/cassandra-sink-0.0.1-SNAPSHOT.jar
+
+    # and create/deploy stream
+    # NOTE make sure to tset the contact points and datacenter like this...spring is doing some magic and tries to load a session automatically, even before we call it, so have to do this. This can be set in application.properties too though
+    stream create geocoding-stream-to-custom-c-sink --definition "usage-detail-sender | geocoding-processor | cassandra-sink" --deploy
+    ```
+
+    Current status: Also not working
 
 # Monitoring
 
@@ -362,6 +399,35 @@ Then in skipper logs, see something like this:
    Logs will be in /tmp/1627881465927/time-log.time-v1
 ```
 
+### Spin up a quick HTTP endpoint on C* 
+
+Helpful for seeing how this all works with C*
+Using [this guide](https://docs.spring.io/spring-cloud-dataflow-samples/docs/current/reference/htmlsingle/#http-cassandra-local), but setting contact points to access docker c*.
+
+
+In CLI:
+```
+# import kafka 
+app import --uri https://dataflow.spring.io/kafka-maven-latest
+
+# create teh stream
+# - make sure to use a port that is opened by Skipper Server, which is where the http endpoint is going to be running behind
+stream create cassandrastream --definition "http --server.port=20000 --spring.cloud.stream.bindings.output.contentType='application/json' | cassandra --spring.data.cassandra.contact-points=dataflow-dse-server:9042  --spring.data.cassandra.local-datacenter=dc1 --ingestQuery='insert into book (id, isbn, title, author) values (uuid(), ?, ?, ?)' --keyspace=clouddata" --deploy
+
+# wait for it to deploy....
+
+# Hit teh endpoint, after waiting for 
+http post --contentType 'application/json' --data '{"isbn": "1599869772", "title": "The Art of War", "author": "Sun Tzu"}' --target http://localhost:20000
+
+```
+
+### Debugging docs
+For streams:
+- https://dataflow.spring.io/docs/stream-developer-guides/troubleshooting/debugging-scdf-streams/
+
+For tasks: 
+- https://dataflow.spring.io/docs/batch-developer-guides/troubleshooting/debugging-scdf-tasks/
+
 ## Some Common Errors
 ### Cannot unregister then re-register an app without changing its name
 
@@ -371,7 +437,9 @@ Solution: Looks like you need to delete the release in Skipper: https://stackove
 - Answer provided by SCDF core member, so probably what you have to do
 - (NOTE I have not tried yet)
 
-Workaround: just use a new name
+Workaround #1: just use a new name
+Workaround #2: If the goal is just to push up new code, bump up the jar version and register the new jar. This will create a new version in the registry.
+
 
 ### ERROR: org.springframework.cloud.skipper.SkipperException: Statemachine is not in state ready to do UPGRADE
 Sometimes just have to wait for Skipper to figure things out. E.g., maybe if state is not FAILED and not DEPLOYED, I think you just have to wait longer. For example, if state is `UNKNOWN` or `PARTIAL` you have to wait for the timeout (5 min).
@@ -387,3 +455,12 @@ Just delete the deploy (using REST API or CLI) and redeploy in the GUI
 export scdf_stream_name=usage-cost-logger-stream
 curl "http://localhost:9393/streams/deployments/$scdf_stream_name" -i -X DELETE
 ```
+
+### Cassandra contact point keeps getting set as 127.0.0.1:9042 despite being set in --spring.data.cassandra.contact-points
+For Cassandra sink, there was trouble when passing in array. Maybe comma separated works, or just a single value like this:
+
+```
+--spring.data.cassandra.contact-points=dataflow-dse-server:9042
+```
+
+### 
