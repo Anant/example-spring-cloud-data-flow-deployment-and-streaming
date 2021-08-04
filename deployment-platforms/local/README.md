@@ -35,9 +35,10 @@ For this demo, we will use docker uri, but since the jars are in the filepath of
 ```
 cd ../../usage-cost-stream-sample && \
 export skipper_server_name=skipper && \
-docker cp usage-cost-logger/target/usage-cost-logger-0.0.1-SNAPSHOT.jar $skipper_server_name:/home && \
-docker cp usage-cost-processor/target/usage-cost-processor-0.0.1-SNAPSHOT.jar $skipper_server_name:/home && \
-docker cp usage-detail-sender/target/usage-detail-sender-0.0.1-SNAPSHOT.jar $skipper_server_name:/home
+export stream_jars_version=0.0.3-SNAPSHOT && \
+docker cp usage-cost-logger/target/usage-cost-logger-$stream_jars_version.jar $skipper_server_name:/home && \
+docker cp usage-cost-processor/target/usage-cost-processor-$stream_jars_version.jar $skipper_server_name:/home && \
+docker cp usage-detail-sender/target/usage-detail-sender-$stream_jars_version.jar $skipper_server_name:/home
 ```
 
 You can register using the SCDF Dashboard if you're into GUIs, or run the script below. 
@@ -65,9 +66,10 @@ NOTE as of 8/2/21, this link returning a 404 if using link provided in docs, but
     # run 
     java -jar spring-cloud-dataflow-shell-2.8.1.jar
 
-    app register --name usage-detail-sender --type source --uri file:///home/usage-detail-sender-0.0.1-SNAPSHOT.jar
-    app register --name usage-cost-processor --type processor --uri file:///home/usage-cost-processor-0.0.1-SNAPSHOT.jar
-    app register --name usage-cost-logger --type sink --uri file:///home/usage-cost-logger-0.0.1-SNAPSHOT.jar
+    # then in the CLI shell:
+    app register --name usage-detail-sender --type source --uri file:///home/usage-detail-sender-0.0.3-SNAPSHOT.jar
+    app register --name usage-cost-processor --type processor --uri file:///home/usage-cost-processor-0.0.3-SNAPSHOT.jar
+    app register --name usage-cost-logger --type sink --uri file:///home/usage-cost-logger-0.0.3-SNAPSHOT.jar
     ```
 
 If your SCDF docker container is up and running already, this should connect automatically.
@@ -88,11 +90,12 @@ You can confirm they were registered by viewing in the Apps index: http://localh
 
 
 ## Compose a Stream
+### In the GUI
 1. Go to stream composition view: http://localhost:9393/dashboard/#/streams/list/create
 2. String the apps together using the drag and drop feature, or insert this into the text box:
   - Set the ports for each app, since they are all local. [See this guide for more details](https://dataflow.spring.io/docs/stream-developer-guides/streams/data-flow-stream/#local). Just insert this in the "Freetext" tab:
     ```
-    usage-detail-sender --server.port=9000 | usage-cost-processor --server.port=9001 | usage-cost-logger --server.port=9002
+    usage-detail-sender | usage-cost-processor | usage-cost-logger 
     ```
     
  - Note that these could also be set in the next step, using args such as `app.usage-detail-sender.server.port=9000`
@@ -102,12 +105,16 @@ You can confirm they were registered by viewing in the Apps index: http://localh
 - You now have an undeployed stream.
 
 5. Deploy by clicking the three dots on left of your stream in the [streams index](http://localhost:9393/dashboard/#/streams/list) and click "Deploy"
-6. Set your deployment properties
+6. Set your deployment properties (should not need anything, but you can change your configs here if you want)
 
 - Then click "Deploy the Stream"
 
+### In the CLI
+```
+stream create usage-cost-logger --definition "usage-detail-sender | usage-cost-processor | usage-cost-logger" --deploy
+```
 
-### Check the output of a stream
+## Check the output of a stream
 1. Find the path to the stdout in the stream runtimes list
 2. Follow that path within the skipper container:
 ```
@@ -134,10 +141,11 @@ docker exec -it skipper tail -f $scdf_stream_stdout_path
 - If already built, need to build again to get the application.properties file into the target
 
     ```
-    export skipper_server_name=skipper && \
     cd ../../usage-cost-stream-sample && \
     ./mvnw clean package && \
-    docker cp ./geocoding-processor/target/geocoding-processor-0.0.1-SNAPSHOT.jar $skipper_server_name:/home
+    export skipper_server_name=skipper && \
+    export stream_jars_version=0.0.3-SNAPSHOT && \
+    docker cp ./geocoding-processor/target/geocoding-processor-$stream_jars_version.jar $skipper_server_name:/home
     ```
 
 4. Register the geocoding processor app 
@@ -145,12 +153,12 @@ docker exec -it skipper tail -f $scdf_stream_stdout_path
 - Click on dropdown to "Import application coordinates from a properties file"
 - Paste this in:
     ```
-    processor.geocoding-processor=file:///home/geocoding-processor-0.0.1-SNAPSHOT.jar
+    processor.geocoding-processor=file:///home/geocoding-processor-0.0.3-SNAPSHOT.jar
     ```
 
 Or in the CLI:
 		```
-    app register --name geocoding-processor --type processor --uri file:///home/geocoding-processor-0.0.1-SNAPSHOT.jar
+    app register --name geocoding-processor --type processor --uri file:///home/geocoding-processor-0.0.3-SNAPSHOT.jar
 		# expected response:
 		# > Successfully registered application 'processor:geocoding-processor'
 		```
@@ -160,7 +168,12 @@ Or in the CLI:
 ```
 usage-detail-sender | geocoding-processor | log
 ```
-- Name it `log-geocoding-processor`
+Name it `log-geocoding-processor`. 
+
+Or in the CLI
+```
+stream create log-geocoding-processor --definition "usage-detail-sender | geocoding-processor | log" --deploy
+```
 
 6. Confirm that it's writing to a Kafka topic
 - Check that kafka topic is made

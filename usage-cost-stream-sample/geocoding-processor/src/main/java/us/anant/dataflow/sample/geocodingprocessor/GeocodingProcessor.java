@@ -14,6 +14,9 @@ import org.json.JSONObject;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Configuration
 public class GeocodingProcessor {
 
@@ -21,6 +24,8 @@ public class GeocodingProcessor {
 	// pull from application.properties
 	@Value("${google.maps.api-key}")
 	private String googleApiKey;
+
+	private static final Logger logger = LoggerFactory.getLogger(GeocodingProcessor.class);
 
 	/**
 	 * - for why a Function is used for processor, see https://dataflow.spring.io/docs/feature-guides/streams/function-composition/#function-composition
@@ -53,8 +58,10 @@ public class GeocodingProcessor {
 				usageCoordinates.setLatitude(lat);
 				// google's long
 				usageCoordinates.setLongitude(lng);
+				logger.info(usageCoordinates.toString());
 
 			} catch (Exception e) {
+				logger.error("Failed to process record");
 				e.printStackTrace();
 			} 
 

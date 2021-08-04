@@ -5,8 +5,14 @@ import java.util.function.Function;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 @Configuration
 public class UsageCostProcessor {
+
+	private static final Logger logger = LoggerFactory.getLogger(UsageCostProcessor.class);
 
 	private double ratePerSecond = 0.1;
 
@@ -23,6 +29,7 @@ public class UsageCostProcessor {
 			usageCostDetail.setUserId(usageDetail.getUserId());
 			usageCostDetail.setCallCost(usageDetail.getDuration() * this.ratePerSecond);
 			usageCostDetail.setDataCost(usageDetail.getData() * this.ratePerMB);
+
 			return usageCostDetail;
 		};
 	}
