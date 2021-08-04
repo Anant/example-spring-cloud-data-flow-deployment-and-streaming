@@ -25,11 +25,6 @@ With tests:
 ../../usage-cost-stream-sample/mvnw clean package
 ```
 
-Without tests:
-```
-TODO
-```
-
 ### Copy jars to SCDF Skipper Server
 You can make access jars from several different protocols (maven repo, HTTP, local file system, and docker image). [Find out more here](https://docs.spring.io/spring-cloud-dataflow/docs/current/reference/htmlsingle/#spring-cloud-dataflow-register-stream-apps)
 - if want the jars local in the docker container, make sure to put in the skipper container, not the scdf server
@@ -226,30 +221,6 @@ The default Cassandra sink app expects json (see [reference](https://docs.spring
     ```
 
 TODO get it working...right now, not writing and silently. There is no clear indication why sink doesn't work. 
-
-----------------------------
-Alternative: custom C* sink
-
-- copy over the jar
-    ```
-    cd ../../usage-cost-stream-sample && \
-    export skipper_server_name=skipper && \
-    docker cp cassandra-sink/target/cassandra-sink-0.0.1-SNAPSHOT.jar $skipper_server_name:/home
-    ```
-- Register as app and deploy
-    ```
-    # run CLI
-    java -jar spring-cloud-dataflow-shell-2.8.1.jar
-
-    # register
-    app register --name cassandra-sink --type sink --uri file:///home/cassandra-sink-0.0.1-SNAPSHOT.jar
-
-    # and create/deploy stream
-    # NOTE make sure to tset the contact points and datacenter like this...spring is doing some magic and tries to load a session automatically, even before we call it, so have to do this. This can be set in application.properties too though
-    stream create geocoding-stream-to-custom-c-sink --definition "usage-detail-sender | geocoding-processor | cassandra-sink" --deploy
-    ```
-
-    Current status: Also not working
 
 # Monitoring
 
