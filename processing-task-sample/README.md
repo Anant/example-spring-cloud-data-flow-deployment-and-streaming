@@ -1,24 +1,12 @@
-# Standalone Stream Sample
+# Launch a Task from a stream
 
-## Deploy using Docker (locally)
-[Instructions here](./../deployment-platforms/local/README.md).
 
-## Building the apps
+Basically taking our source for stream deployment and just updating so it can launch a task instead.
 
-Use the appropriate binder profiles `kafka` (active by default) or `rabbit` to build a binary for use with that binder.
+## Key differences from the pure stream implementation:
+- add the app-starters-task-launch-request-common component to the source
+- Add a prebuilt sink which kicks off the task
+- Create and register a task that you want to be launched
 
-```bash
-$./mvnw clean package
-```
-
-## Building the distribution zip file
-
-```bash
-$./mvnw package -Pdist
-
-```
-
-This must be run from this directory and will build `dist/usage-cost-stream-sample.zip` 
-
-# Guide/Instructions for this template:
-https://dataflow.spring.io/docs/stream-developer-guides/streams/standalone-stream-sample/
+## Follows this guide: 
+https://docs.spring.io/spring-cloud-dataflow/docs/current/reference/htmlsingle/#spring-cloud-dataflow-launch-tasks-from-stream

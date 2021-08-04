@@ -1,5 +1,4 @@
+# Description 
 Basically taking our source for stream deployment and just updating so it can launch a task instead.
 
-Follows this guide: 
-
-https://docs.spring.io/spring-cloud-dataflow/docs/current/reference/htmlsingle/#spring-cloud-dataflow-launch-tasks-from-stream
+All you should have to do is add a dependency, the app-starters-task-launch-request-common component

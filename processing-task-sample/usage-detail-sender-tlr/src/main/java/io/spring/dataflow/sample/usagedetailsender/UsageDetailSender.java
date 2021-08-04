@@ -38,7 +38,7 @@ public class UsageDetailSender {
 	 *
 	 */ 
 	@Bean
-	public Supplier<UsageDetail> sendEvents() {
+	public Supplier<LaunchTaskRequest> sendEvents() {
 		return () -> {
 			UsageDetail usageDetail = new UsageDetail();
 			usageDetail.setUserId(this.users[new Random().nextInt(5)]);
@@ -46,7 +46,12 @@ public class UsageDetailSender {
 			usageDetail.setData(new Random().nextInt(700));
 			usageDetail.setAddress(this.addresses[new Random().nextInt(18)]);
 
-			return usageDetail;
+			// TODO build out options for this task based on usage detail
+			LaunchTaskRequest taskRequest = new LaunchTaskRequest();
+
+			// NOTE seems to write to Kafka based on the POJO, just converts to json. Does not use toString();
+			taskRequest.setName("timestamp-task");
+			return taskRequest;
 		};
 	}
 }

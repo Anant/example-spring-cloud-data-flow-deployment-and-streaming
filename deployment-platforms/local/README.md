@@ -194,15 +194,21 @@ usage-detail-sender | geocoding-processor | log
     ```
 
 
-## Trigger Task from a stream (WIP)
+## Trigger Task from a stream
 Following this guide: https://docs.spring.io/spring-cloud-dataflow-samples/docs/current/reference/htmlsingle/#_stream_launching_batch_job
 
-1. Copy jar into Skipper server container
+0. Build jar
+
+1. Copy task jar into Skipper server container
 
     ```
-    cd ../../usage-cost-stream-sample && \
+
+    cd ../../processing-task-sample && \
+    ./mvnw clean package && \
     export skipper_server_name=skipper && \
-    docker cp ./geocoding-processor-task/target/geocoding-processor-task-0.0.1-SNAPSHOT.jar $skipper_server_name:/home
+    export task_launcher_app_version=0.0.1-SNAPSHOT && \
+    docker cp ./geocoding-processor-task/target/geocoding-processor-task-$task_launcher_app_version.jar $skipper_server_name:/home
+    docker cp ./usage-detail-sender-tlr/target/usage-detail-sender-tlr-$task_launcher_app_version.jar $skipper_server_name:/home
     ```
 2. Create Task
 
@@ -210,6 +216,11 @@ Following this guide: https://docs.spring.io/spring-cloud-dataflow-samples/docs/
     ```
     # for example, in the CLI shell:
     app register --name geocoding-task --type task --uri file:///home/geocoding-processor-task-0.0.1-SNAPSHOT.jar
+    app register --name usage-detail-sender-tlr --type source --uri file:///home/usage-detail-sender-tlr-0.0.1-SNAPSHOT.jar
+    # I had trouble finding a working maven uri, but found this from the following link and it seems to work: https://www.fusiondb.cn/docs/recipes/batch/sftp-to-jdbc/
+    # app register --name task-launcher --type sink --uri maven://org.springframework.cloud.stream.app:task-launcher-dataflow-sink-kafka:1.0.1.RELEASE
+    app register --name task-launcher --type sink --uri maven://org.springframework.cloud.stream.app:task-launcher-dataflow-sink-kafka:1.1.5.BUILD-SNAPSHOT
+
     ```
 
  - Create the Task definition
@@ -221,26 +232,79 @@ Following this guide: https://docs.spring.io/spring-cloud-dataflow-samples/docs/
     # > Created new task 'geocoding-task'
     ```
 
- - Test launch task
+ - Test launch task (TODO haven't done actually)
     ```
     # for example, in the CLI shell:
     task launch geocoding-task
     # sample STDOUT response:
     # > Launched task 'geocoding-task' with execution id 1
     ```
+    For now, doesn't do anything than print to STDOUT "hello world"
+
+
  - Create the stream that launches the task
     ```
     # for example, in the CLI shell:
     # (assuming usage-detail-sender is already registered)
-    stream create geocoding-task-from-stream --definition "usage-detail-sender | geocoding-processor-task | log" --deploy
+
+    # setting custom messages
+    # TODO haven't gotten working
+    # stream create task-from-stream --definition "usage-detail-sender-tlr  --spring.cloud.stream.function.definition=taskLaunchRequest --task.launch.request.task-name=timestamp-task | task-launcher --spring.cloud.dataflow.client.server-uri=http://dataflow-server:9393" --deploy
+
+
+    # try by just writing the job name from the returned java obj instance itself
+    # I figure if http source can make it work by just writing to kafka, then we can just write to kafka too and leave out some of the extra complexity for now
+    stream create task-from-stream --definition "usage-detail-sender-tlr | task-launcher --spring.cloud.dataflow.client.server-uri=http://dataflow-server:9393" --deploy
 
     # should get response: 
     # > Created new stream 'geocoding-task-from-stream'
     # > Deployment request has been sent
     ```
 
-    TODO figure out why tasks aren't getting ran, try with their complete examples...but need to find one with kafka and mysql or adjust to make sure it uses those
+    This should launch the task `timestamp-task`
 
+
+    Check in Kafka
+    ```
+    docker exec dataflow-kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic task-from-stream.usage-detail-sender-tlr
+    ```
+
+### You can also debug by trying to use from http endpoint, e.g.:
+(Following [this example](https://github.com/spring-cloud-stream-app-starters/tasklauncher-dataflow/tree/main/spring-cloud-starter-stream-sink-task-launcher-dataflow#examples))
+
+- Note that this does not work with v.1.0.1.RELEASE, but does work with 1.1.5.BUILD-SNAPSHOT
+
+```
+    stream create task-from-http-stream --definition "http --server.port=20009 --spring.cloud.stream.bindings.output.contentType='application/json' | task-launcher --spring.cloud.dataflow.client.server-uri=http://dataflow-server:9393" --deploy
+```
+
+Then you can do post requests from the CLI
+
+```
+http post --contentType 'application/json' --data '{"name": "timestamp-task"}' --target http://localhost:20009
+```
+
+**Confirm Success:**
+You should see in logs for task-launcher: 
+```
+2021-08-04 07:00:17.691  INFO 5403 --- [pool-2-thread-1] o.a.k.clients.consumer.KafkaConsumer     : [Consumer clientId=task-from-http-stream.http, groupId=task-from-http-stream] Subscribed to topic(s): task-from-http-stream.http
+
+```
+
+You should also see tasks generated
+- Note though that the launcher only polls every so often, and less frequently when the messages are coming in less frequently. You might have to wait several seconds for a task to launch
+
+You can see the logs for when a task is launched, e.g., if task is named "timestamp-task":
+```
+2021-08-04 07:55:08.652  INFO 5403 --- [pool-2-thread-1] o.s.c.s.a.t.l.d.s.LaunchRequestConsumer  : Launching Task timestamp-task on platform default
+```
+
+Then in the CLI:
+```
+dataflow:>task execution list
+```
+
+This code should work. If not, you need to look into your configuration so that this basic example works first. 
 
 ## Sink directly from Kafka topic into Cassandra 
 TODO
@@ -445,4 +509,9 @@ For Cassandra sink, there was trouble when passing in array. Maybe comma separat
 --spring.data.cassandra.contact-points=dataflow-dse-server:9042
 ```
 
-### 
+### Task launcher is launching the wrong task (sometimes, e.g., null task)
+This can happen sometimes if you were launching one type of task before, then switch to a different type on the same stream. Even if you make sure to change what version of the jar to use, and the correct message is getting written to kafka, this can still happen.
+
+Making a clone of the stream and undeploying/destroying the old one can work. 
+
+
