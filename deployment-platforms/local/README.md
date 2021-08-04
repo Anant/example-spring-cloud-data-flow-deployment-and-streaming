@@ -255,7 +255,7 @@ TODO
 ```
 CREATE KEYSPACE clouddata WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;
 CREATE TABLE clouddata.usage_detail  (
-    userId      TEXT PRIMARY KEY,
+    userid      TEXT PRIMARY KEY,
     latitude    TEXT,
     longitude    TEXT
 );
@@ -276,30 +276,6 @@ The default Cassandra sink app expects json (see [reference](https://docs.spring
     ```
 
 TODO get it working...right now, not writing and silently. There is no clear indication why sink doesn't work. 
-
-----------------------------
-Alternative: custom C* sink
-
-- copy over the jar
-    ```
-    cd ../../usage-cost-stream-sample && \
-    export skipper_server_name=skipper && \
-    docker cp cassandra-sink/target/cassandra-sink-0.0.1-SNAPSHOT.jar $skipper_server_name:/home
-    ```
-- Register as app and deploy
-    ```
-    # run CLI
-    java -jar spring-cloud-dataflow-shell-2.8.1.jar
-
-    # register
-    app register --name cassandra-sink --type sink --uri file:///home/cassandra-sink-0.0.1-SNAPSHOT.jar
-
-    # and create/deploy stream
-    # NOTE make sure to tset the contact points and datacenter like this...spring is doing some magic and tries to load a session automatically, even before we call it, so have to do this. This can be set in application.properties too though
-    stream create geocoding-stream-to-custom-c-sink --definition "usage-detail-sender | geocoding-processor | cassandra-sink" --deploy
-    ```
-
-    Current status: Also not working
 
 # Monitoring
 
@@ -427,6 +403,12 @@ For streams:
 
 For tasks: 
 - https://dataflow.spring.io/docs/batch-developer-guides/troubleshooting/debugging-scdf-tasks/
+
+### Increase application log level
+
+```
+--logging.level.org.springframework.integration=DEBUG
+```
 
 ## Some Common Errors
 ### Cannot unregister then re-register an app without changing its name

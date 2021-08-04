@@ -1,0 +1,6 @@
+logging.level.org.springframework.cloud.task=DEBUG
+
+# required (?) for tasks
+spring.application.name=geocodingProcessor
+
+google.maps.api-key=<api-key>
