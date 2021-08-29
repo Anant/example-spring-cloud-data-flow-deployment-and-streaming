@@ -59,7 +59,8 @@ docker exec -it dataflow-server java -jar shell.jar
 
 
 NOTE as of 8/2/21, this link returning a 404 if using link provided in docs, but this link works (use "release" instead of "snapshot" in the path)
-    ```
+
+    
     # download CLI
     wget https://repo.spring.io/release/org/springframework/cloud/spring-cloud-dataflow-shell/2.8.1/spring-cloud-dataflow-shell-2.8.1.jar
 
@@ -70,7 +71,7 @@ NOTE as of 8/2/21, this link returning a 404 if using link provided in docs, but
     app register --name usage-detail-sender --type source --uri file:///home/usage-detail-sender-0.0.3-SNAPSHOT.jar
     app register --name usage-cost-processor --type processor --uri file:///home/usage-cost-processor-0.0.3-SNAPSHOT.jar
     app register --name usage-cost-logger --type sink --uri file:///home/usage-cost-logger-0.0.3-SNAPSHOT.jar
-    ```
+    
 
 If your SCDF docker container is up and running already, this should connect automatically.
 
