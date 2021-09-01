@@ -521,3 +521,97 @@ This can happen sometimes if you were launching one type of task before, then sw
 Making a clone of the stream and undeploying/destroying the old one can work. 
 
 
+### Spring Cloud Data flow Routing:
+The Router Application is a Sink Application. Router application will dynamically route to a configured Destination based on either an Spring Expression Language (SpEL) or a groovy script
+**** TABLE  names with underscores or hyphen do not work
+### SpEL based Routing
+1) Create following tables, to route book payload based on the expression on payload 
+CREATE TABLE bookus  (
+    id          uuid PRIMARY KEY,
+    isbn        text,
+    author      text,
+    title       text
+);
+
+CREATE TABLE bookeuro  (
+    id          uuid PRIMARY KEY,
+    isbn        text,
+    author      text,
+    title       text
+);
+
+2) Create named Destinations required for message routing. Here we are creating named destinations us and euro that will insert into cassandra tables bookus and bookeuro respectively.
+
+stream create us --definition ":us > cassandra --spring.data.cassandra.contact-points=dataflow-dse-server --spring.data.cassandra.local-datacenter=dc1 --ingestQuery='insert into clouddata.bookus (id, isbn, title, author) values (uuid(), ?, ?, ?)' --keyspace=clouddata" --deploy
+
+stream create euro --definition ":euro > cassandra --spring.data.cassandra.contact-points=dataflow-dse-server --spring.data.cassandra.local-datacenter=dc1 --ingestQuery='insert into clouddata.bookeuro (id, isbn, title, author) values (uuid(), ?, ?, ?)' --keyspace=clouddata" --deploy
+
+3) Create Payload Router Stream based on SpEL (Here if payload contains 'us' message will be routed to named destination 'us' otherwise they will be routed to named destination 'euro'
+stream create payload-router --definition "http --server.port=20002  --spring.cloud.stream.bindings.output.contentType='application/json' | router --expression=payload.contains('us')?'us':'euro'" --deploy
+
+4) Send Payload data
+http post --contentType 'application/json' --data '{"isbn": "1599869999", "title": "USA birth of us", "author": "Geroge Washington"}' --target http://localhost:20002
+http post --contentType 'application/json' --data '{"isbn": "1599869577", "title": "Death of Empires", "author": "John Vasco"}' --target http://localhost:20002
+
+5) Run Queries to check the data is in respective tables
+select * from bookus (USA birth of us should be present)
+select * from bookeuro (Death of Empires should be present)
+
+### Groovy Script based Routing 
+1) Create following tables to route customer payload based on region
+CREATE TABLE customerus  (
+    id     uuid PRIMARY KEY,
+    name    text,
+    phone      text,
+    address       text
+);
+
+CREATE TABLE customereuro  (
+    id      uuid PRIMARY KEY,
+    name    text,
+    phone      text,
+    address       text
+);
+
+CREATE TABLE customerasia  (
+    id      uuid PRIMARY KEY,
+    name    text,
+    phone      text,
+    address       text
+);
+
+CREATE TABLE customer (
+    id      uuid PRIMARY KEY,
+    name    text,
+    phone      text,
+    address       text
+);
+
+2) Create named Destinations required for message routing. Here we are creating named destinations customerus, customereuro,customerasia,customerother that will insert into respective cassandra customer tables
+
+stream create customerus --definition ":customerus > cassandra --spring.data.cassandra.contact-points=dataflow-dse-server --spring.data.cassandra.local-datacenter=dc1 --ingestQuery='insert into clouddata.customerus (id, name, phone, address) values (uuid(), ?, ?, ?)' --keyspace=clouddata" --deploy
+
+stream create customereuro --definition ":customereuro > cassandra --spring.data.cassandra.contact-points=dataflow-dse-server --spring.data.cassandra.local-datacenter=dc1 --ingestQuery='insert into clouddata.customereuro (id, name, phone, address) values (uuid(), ?, ?, ?)' --keyspace=clouddata" --deploy
+
+stream create customerasia --definition ":customerasia > cassandra --spring.data.cassandra.contact-points=dataflow-dse-server --spring.data.cassandra.local-datacenter=dc1 --ingestQuery='insert into clouddata.customerasia (id, name, phone, address) values (uuid(), ?, ?, ?)' --keyspace=clouddata" --deploy
+
+stream create customerother --definition ":customerother > cassandra --spring.data.cassandra.contact-points=dataflow-dse-server --spring.data.cassandra.local-datacenter=dc1 --ingestQuery='insert into clouddata.customer (id, name, phone, address) values (uuid(), ?, ?, ?)' --keyspace=clouddata" --deploy
+
+3) Create Payload Router Stream based on Groovy Script 
+stream create customer-router --definition "http --server.port=20003  --spring.cloud.stream.bindings.output.contentType='application/json' | router --script=file:/home/CustomerRouter.groovy" --deploy
+
+
+4) Send Payload data
+http post --contentType 'application/json' --data '{"name": "John Smith", "phone": "703-111-1234", "address": "123, Park Ave, Newyork NY-10002", "region": "us"}' --target http://localhost:20003
+
+http post --contentType 'application/json' --data '{"name": "Le Peng", "phone": "9992345666", "address": "456, Bejing Ave, Shanghai, China", "region": "asia"}' --target http://localhost:20003
+
+http post --contentType 'application/json' --data '{"name": "Vasco Degama", "phone": "443678990", "address": "9945, German rd, Portugal", "region": "euro"}' --target http://localhost:20003
+
+http post --contentType 'application/json' --data '{"name": "Clive Lloyd", "phone": "55990234", "address": "33l, Safar dr, Johansberg, South Africa", "region": "africa"}' --target http://localhost:20003
+
+5) Run Queries to check the data is in respective tables
+select * from customerus;
+select * from customereuro;
+select * from customerasia;
+select * from customer;
